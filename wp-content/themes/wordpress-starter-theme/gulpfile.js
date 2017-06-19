@@ -1,0 +1,123 @@
+'use strict';
+
+// Require Dependencies
+const gulp = require('gulp');
+const fs = require('fs');
+const gulpSequence = require('gulp-sequence');
+const sass = require('gulp-sass');
+const sourcemaps = require('gulp-sourcemaps');
+const postcss = require('gulp-postcss');
+const autoprefixer = require("autoprefixer");
+const mqpacker = require("css-mqpacker");
+const cleanCSS = require('gulp-clean-css');
+const browserSync = require('browser-sync').create();
+
+// Settings
+let postCssSettings = [
+  autoprefixer({browsers: ['last 2 version']}),
+  mqpacker({
+    sort: true
+  })
+];
+
+const config = require('./projectConfig.json');
+const devDomain = config.devDomain;
+
+// Tasks
+
+// Style
+gulp.task('style', function() {
+ return gulp.src('./assets/sass/main.scss')
+  .pipe(sourcemaps.init())
+  .pipe(sass().on('error', sass.logError))
+  .pipe(postcss(postCssSettings))
+  .pipe(cleanCSS())
+  .pipe(sourcemaps.write('/'))
+  .pipe(gulp.dest('./assets/dist'))
+  .pipe(browserSync.stream({match: '**/*.css'}));
+});
+
+// Style build
+gulp.task('style-build', function() {
+ return gulp.src('./assets/sass/main.scss')
+  .pipe(sass().on('error', sass.logError))
+  .pipe(postcss(postCssSettings))
+  .pipe(cleanCSS())
+  .pipe(gulp.dest('./assets/dist'));
+});
+
+// Sprite
+gulp.task('sprite', function() {
+  const spritesmith = require('gulp.spritesmith');
+  const merge = require('merge-stream');
+  let spriteData = gulp.src('./assets/images/sprite/*.png').pipe(spritesmith({
+    imgName: 'spritesheet.png',
+    cssName: '_sprite.scss',
+    padding: 2,
+    cssFormat: 'css',
+    imgPath: '../images/spritesheet.png'
+  }));
+  let imgStream = spriteData.img
+    .pipe(gulp.dest('./assets/images/'));
+  let cssStream = spriteData.css
+    .pipe(gulp.dest('./assets/sass/'));
+  return merge(imgStream, cssStream);
+});
+
+// Clean
+gulp.task('clean', function() {
+  const del = require('del');
+  return del(['./assets/dist/main.css.map']);
+});
+
+
+// Main tasks
+
+
+// Build
+gulp.task('build-dev', function(callback) {
+  gulpSequence(
+    'clean',
+    'style',
+    callback
+  );
+});
+
+gulp.task('build', function(callback) {
+  gulpSequence(
+    'clean',
+    'style-build',
+    callback
+  );
+});
+
+
+// Watch
+gulp.task('serve', ['build-dev'], function() {
+  browserSync.init({
+    files: ['{include,template-parts,woocommerce}/**/*.php', '*.php'],
+    proxy: devDomain,
+    open: false,
+    port: 5050,
+    snippetOptions: {
+      whitelist: ['/wp-admin/admin-ajax.php'],
+      blacklist: ['/wp-admin/**']
+    }
+  });
+  gulp.watch('assets/sass/**/*.scss', {cwd: './'}, ['style']);
+  gulp.watch('assets/**/*.{js,jpg,jpeg,gif,png,svg}', {cwd: './'}, ['watch:reload']);
+});
+
+gulp.task('watch:reload', ['add-reload'], reload);
+
+gulp.task('add-reload', function() {});
+
+// Development task
+gulp.task('default', ['serve']);
+
+
+// Browser reload
+function reload(done) {
+  browserSync.reload();
+  done();
+}
