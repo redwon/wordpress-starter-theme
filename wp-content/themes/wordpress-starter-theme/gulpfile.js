@@ -8,16 +8,13 @@ const sass = require('gulp-sass');
 const sourcemaps = require('gulp-sourcemaps');
 const postcss = require('gulp-postcss');
 const autoprefixer = require("autoprefixer");
-const mqpacker = require("css-mqpacker");
 const cleanCSS = require('gulp-clean-css');
 const browserSync = require('browser-sync').create();
+const gcmq = require('gulp-group-css-media-queries');
 
 // Settings
 let postCssSettings = [
-  autoprefixer({browsers: ['last 2 version']}),
-  mqpacker({
-    sort: true
-  })
+  autoprefixer({browsers: ['last 2 version']})
 ];
 
 const config = require('./projectConfig.json');
@@ -30,6 +27,7 @@ gulp.task('style', function() {
  return gulp.src('./assets/sass/main.scss')
   .pipe(sourcemaps.init())
   .pipe(sass().on('error', sass.logError))
+  .pipe(gcmq())
   .pipe(postcss(postCssSettings))
   .pipe(cleanCSS())
   .pipe(sourcemaps.write('/'))
@@ -41,6 +39,7 @@ gulp.task('style', function() {
 gulp.task('style-build', function() {
  return gulp.src('./assets/sass/main.scss')
   .pipe(sass().on('error', sass.logError))
+  .pipe(gcmq())
   .pipe(postcss(postCssSettings))
   .pipe(cleanCSS())
   .pipe(gulp.dest('./assets/dist'));
