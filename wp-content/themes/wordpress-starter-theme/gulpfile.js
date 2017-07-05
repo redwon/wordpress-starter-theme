@@ -27,7 +27,6 @@ gulp.task('style', function() {
  return gulp.src('./assets/sass/main.scss')
   .pipe(sourcemaps.init())
   .pipe(sass().on('error', sass.logError))
-  .pipe(gcmq())
   .pipe(postcss(postCssSettings))
   .pipe(cleanCSS())
   .pipe(sourcemaps.write('/'))
